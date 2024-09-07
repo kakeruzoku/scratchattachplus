@@ -5,15 +5,6 @@ install:
 pip install scratchattachplus
 ```
 
-## Features in ScratchAttachplus
-Compared to ScratchAttach...
-- report
-- Creating a Class Account
-- Easy Migration from scratchattach
-- scratchattach functionality also remains available
-
-wiki is [here](https://github.com/kakeruzoku/scratchattachplus/wiki)
-
 ## ScratchAttachplusの機能
 ScratchAttachに比べて...
 - 報告
@@ -32,8 +23,7 @@ wikiは[こちら](https://github.com/kakeruzoku/scratchattachplus/wiki)
 
 [mail](mailto:kakeruzoku@gmail.com)
 
-[discord](https://0f.f5.si/d) PLZ JOIN MY SERVER!
+[discord](https://0f.f5.si/d)
 
 ## Thanks!
 **Thanks to [timmccool](https://github.com/TimMcCool) for [scratchattach](https://github.com/TimMcCool/scratchattach)**
-*

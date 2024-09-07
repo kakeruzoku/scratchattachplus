@@ -1,10 +1,7 @@
 # News
-Open to the public!
+公開!
 
 # v0.x.x
 ## v0.0.x
 ### v0.0.1
-- Open to the public!
-- report User,Studio,Comment
-- Comment class
-- Create student account
+- 仮公開(testpypi)

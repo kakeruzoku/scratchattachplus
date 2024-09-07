@@ -1,24 +1,28 @@
-I use Google Translate and DeepL Translate.
+**このプロジェクトは趣味で作成しています。[timmccool](https://github.com/TimMcCool)やScratch teamからの承認、協力されていません。**
 
-# Building the Environment / 環境構築
-- Download [python](https://www.python.org/downloads) / [python](https://www.python.org/downloads)をダウンロード
-- install Scratchattachplus
-command prompt or shell: コマンドプロンプトまたはシェルで:
+# 環境構築
+- [python](https://www.python.org/downloads)をダウンロード
+- Scratchattachplusのインストール
+
+コマンドプロンプトまたはシェルで:
 ```
 pip install scratchattachplus
 ```
 
-# Using scratchattach
-Loading scratchattach at the same time. 同時にScratchAttachも利用可能です。
+# scratchattachも使用可能！
+同時にScratchAttachも利用可能です。
 ```python
 import scratchattachplus as sp
 
-sp.login("username","password") #ScratchAttach function
+sp.login("username","password") #ScratchAttachの関数
 ```
-Click [here](https://github.com/TimMcCool/scratchattach) for more information on Scratch Attach
+ScratchAttachのコマンドリストは[こちら](https://github.com/TimMcCool/scratchattach)
+私が作成した日本語まとめは[こちら](https://note.com/kakeruzoku/n/n3898a84187a8?magazine_key=m35df18cbe97d)
 
-# Migration from scratchattach / ScratchAttachからの移行
-Just rewrite the scratchattach import to scratchattachplus!
+# ScratchAttachからの移行
+ScratchAttachから移行しよう！
+
+このプロジェクトではScratchattachを直接読み込んでいるのでバグの発生は起こりません。
 
 scratchattachのインポートをscratchattachplusに書き換えるだけです!
 ```
@@ -26,75 +30,85 @@ scratchattachのインポートをscratchattachplusに書き換えるだけで�
 + import scratchattachplus as scratch3
 ```
 
-# Comment
+# コメント
+コメントをオブジェクトとして作成できます。
 ```python
+import scratchattachplus as sp
+
+#コメントのタイプ
+comment_type.project
+comment_type.studio
+comment_type.user
+
 c = comment(object:Project|Studio|User,comment_id:int)
+c = object.get_comment_object(comment_id:int) #objectはProject/Studio/User
+#オブジェクトのリストとして
+c = get_comments(objects:Project|Studio|User, limit:int|None=None, offset:int=0)
+c = object.comments_object(comment_id:int) #objectはProject/Studio/User
 
-c.type|str #"p" or "s" or "u"
-c.location:Project|Studio|User
-c.parent_id:int
-c.commentee_id:int
-c.content:str
-c.id:int
-c.datetime:datetime.datetime
-c.author:User
-c.reply_count:int
-c.update_author()
-c.update()
-c.comment_report()
-c.reply(content, commentee:User|str|int|None=None)
-c.delete() # if c.type == studio, can't use it.
+c.type|comment_type #コメント元のタイプ
+c.location:Project|Studio|User #コメント元のオブジェクト
+c.parent_id:int #返信元ID
+c.commentee_id:int #メンション先
+c.content:str #内容
+c.id:int #コメントID
+c.datetime:datetime.datetime #送信時間
+c.author:User #コメント送信者のオブジェクト(断片的,ログイン情報は引き継ぎます。)
+c.reply_count:int #返信数
+c.update_author() #c.authorのデータを完全にします。
+c.update() #コメントオブジェクトのアップデート
+c.reply(content, commentee:User|str|int|None=None) #返信する
+c.delete() # もし c.type が comment_type.studio ならば使用できません。
+c.report() #セッションが必要です。
+c.get_dict() #Scratchの生APIデータ形式のdictを返します。
 ```
 
-# report
-the comments will be deleted after being reported by two accounts. コメントは2アカウントからの報告で削除されます。
+# 報告
+正しく報告を実行してください。
 ```python
 import scratchattachplus as sp
 
-sp.user_report(session,username:str,types:int)
-"""
-session:Session
-username:str
-types:int
-*0:username
-*1:icon
-*2:about me
-*3:working on
+class User_report_type(Enum):
+    username = 0
+    icon = 1
+    about_me = 2
+    working_on = 3
 
-return:bool
-True:success
-False:Failure
-"""
+sp.user_report(session,username:str,types:User_report_type)
+#または
+User.report(type:User_report_type)
 
-sp.studio_report(session:Session,studioid:str,types:int)
-"""
-session:Session
-username:str
-types:int
-*0:title
-*1:description
-*2:thumbnail
+class Studio_report_type(Enum):
+    title = 0
+    description = 1
+    thumbnail = 2
 
-return:bool
-True:success
-False:Failure
-"""
+sp.studio_report(session:Session,studioid:str,types:Studio_report_type)
+#または
+Studio.report(type:Studio_report_type)
+
+comment.report()
 ```
 
-# create student account
-There is no need to do a recaptcha to create a class account. クラスアカウントの作成にはリキャプチャをする必要はありません。
+# クラス
 ```python
 import scratchattachplus as sp
 
-sp.create_student_account(invite_id,username,password)
-"""
-invite_id:https://scratch.mit.edu/signup/[HERE]
-ex. 35etndqk6
-username:str
-password:str
+scclass = sp.scratch_class(classid:int,session:Session|None=None,update:bool=True,_token:str|None=None)
+#または
+scclass = sp.scratch_class_from_token(token:str,session:Session|None=None)
 
-return:
-str:success (sessionID)
-None:Failure
-"""
+scclass.id #クラスID
+scclass.title #クラスのタイトル
+scclass.about_class #クラスについて
+scclass.working_on #今取り組んでいること
+scclass.datetime #datetime.datetime 作成された時間
+scclass.author #User クラスのオーナーのユーザー名
+scclass.token #クラスのトークン(scratch_class_from_tokenから作成されたか、引数_tokenに入力された値)
+scclass.update() #アップデート
+
+scclass._update_from_dict(dict:dict) #dictからアップデート
+scclass.get_dict() #dictを取得
+scclass.create_student_account(username:str,password:str,country:str="Japan",year:int=2000,month:int=1) #アカウントを作成
+create_student_account(invite_id:str,username:str,password:str,**dict) #代用可能
 ```
