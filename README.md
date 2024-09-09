@@ -27,3 +27,4 @@ wikiは[こちら](https://github.com/kakeruzoku/scratchattachplus/wiki)
 
 ## Thanks!
 **Thanks to [timmccool](https://github.com/TimMcCool) for [scratchattach](https://github.com/TimMcCool/scratchattach)**
+**[scratchattach](https://github.com/TimMcCool/scratchattach)を作った[timmccool](https://github.com/TimMcCool)に感謝します。**

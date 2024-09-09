@@ -112,3 +112,28 @@ scclass.get_dict() #dictを取得
 scclass.create_student_account(username:str,password:str,country:str="Japan",year:int=2000,month:int=1) #アカウントを作成
 create_student_account(invite_id:str,username:str,password:str,**dict) #代用可能
 ```
+
+#クラウド変数
+```py
+scratchattach_reqests(conn:CloudConnection,content:str|list,**options) #ScrachAttachでリクエストを送信する(サーバーではありません！)
+#または
+conn.scratchattach_reqests(content:str|list,**options)
+```
+
+#エラー
+```py
+class ResponseError(requests.HTTPError):
+    """
+    サーバーからの返答で失敗した時に送出されます。
+    """
+
+class NoSessionError(Exception):
+    """
+    セッションが必要な関数で、セッションが登録されていないときに送出されます。
+    """
+
+class InvalidUsername(Exception):
+    """
+    ユーザー名が無効である(アカウント登録)
+    """
+```

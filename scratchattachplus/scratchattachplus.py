@@ -150,7 +150,7 @@ class scratch_class:
         self.about_class = dict["description"]
         self.working_on = dict["status"]
         self.datetime = datetime.datetime.fromisoformat(dict["date_start"])
-        self.author = User(dict["educator"]["username"],_session=self._session)
+        self.author = User(username=dict["educator"]["username"],_session=self._session)
         self.author._update_from_dict(dict["educator"])
 
     def get_dict(self):
@@ -159,16 +159,19 @@ class scratch_class:
                 'author': {'id': self.author.id, 'username': self.author.username, 'scratchteam': self.author.scratchteam,
                            "bio":self.author.about_me,"status":self.author.wiwo,'image': self.author.icon_url[:-9]+"60x60.png"}}
 
-    def create_student_account(self,username:str,password:str,country:str="Japan",year:int=2000,month:int=1):
+    def create_student_account(self,username:str,password:str,country:str="Japan",year:int=2000,month:int=1,warn:bool=False):
+        # 制作する方法みつけたらdmください
+        if not warn:
+            input("WARN:現在正しく動作しません。この警告を回避するには 引数:warnをTrueにしてください。 Enterで続行...:")
         if requests.get(f"https://api.scratch.mit.edu/accounts/checkusername/{username}")["msg"] != "valid username":
             raise InvalidUsername
         token = get_csrf_token()
         response = requests.post(f"https://scratch.mit.edu/classes/register_new_student/"
-                                f"?username={username}&password={password}&birth_month={month}&birth_year={year}&gender=male&country={country}&is_robot=false&"
+                                f"?username={username}&password={password}&birth_month={month}&birth_year={year}&gender=male&country={country}&is_robot=false&" #female
                                 f"classroom_id={self.id}&classroom_token={self.token}",
                                 headers={'Referer': f'https://scratch.mit.edu/signup/{self.token}',"x-csrftoken":token,"cookie":f"scratchcsrftoken={token}"})
         if response.status_code == 200:
-            if response.json()[0]["success"]:
+            if response.json()[0]["success"]: #さくせすしない！！！
                 return response.json()["token"]
         raise ResponseError
         
@@ -336,20 +339,136 @@ def get_comments(objects:Project|Studio|User, limit:int|None=None, offset:int=0)
         comment_list.append(_comment)
     return comment_list
 
+def scratchattach_requests(conn:CloudConnection,content:str|list,**options):
+    #読み込み
+    encoded = ""
+    if "logging" in options:
+        if_log = bool(options["logging"])
+    else:
+        if_log = False
+    if "encode_list" in options:
+        encode_list = options["encode_list"]
+    else:
+        encode_list = list("""[[[[[]]]]]1234567890 aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ*/.,!"§$%_-(´)`?<@#~;:+&|^'""")
+    if if_log:
+        print("encode中...")
+    #エンコード開始
+    for i in content:
+        try:
+            encoded = encoded + str(encode_list.index(i)) #探す
+        except: #なかった！！！
+            if if_log:
+                print(f"encode:文字{i}はencodeできません。")
+            raise encodeerror
+    if if_log:
+        print(f"encode完了:{encoded}")
+    #エンコード終わり
+    if "reqest_id" in options:
+        reqest_id = options["reqest_id"]
+    else:
+        reqest_id = random.randint(100000, 999999)
+    if "max_length" in options:
+        max_length = options["max_length"]
+    else:
+        max_length = 245
+    #りくえすと
+    if len(encoded) < max_length:
+        conn.set_var("TO_HOST",f"{encoded}.{reqest_id}") #1回でいける
+        if if_log:
+            print(f"リクエスト完了:{encoded}")
+    else: #2回以上必要
+        while len(encoded) != 0: #残りが0になるまで
+            if len(encoded) < max_length: #あと1でいける
+                conn.set_var("TO_HOST",f"{encoded}.{reqest_id}")
+                if if_log:
+                    print(f"リクエスト完了:{encoded}")
+                encoded = ""
+            else: #まだ残りある
+                conn.set_var("TO_HOST",f"-{encoded[:max_length]}.{reqest_id}")
+                if if_log:
+                    print(f"リクエスト完了:{encoded[:max_length]}")
+                encoded = encoded[max_length:]
+    if if_log:
+        print(f"レスポンス読み込み中...")
+    timeout = time.time() + 10
+    if "response_var" in options:
+        response_var = options["response_var"]
+    else:
+        response_var = [f"FROM_HOST_{i+1}" for i in range(9)]
+    #読み込み開始
+    status = "LOADING"
+    response_list = []
+    while timeout > time.time() and status != "DONE":
+        cloud_get = get_cloud(conn.project_id)
+        for i in response_var:
+            cloud_response = cloud_get[i]
+            if f"{reqest_id}" in f"{cloud_response}": #自分のか
+                if not cloud_response in response_list: #まだ処理してない?
+                    if cloud_response[-4:] == "2222": #エンコード必要
+                        response_list.append(cloud_response)
+                        need_encode = True
+                        status = "DONE"
+                        if if_log:
+                            print(f"レスポンス{cloud_response}を獲得/end")
+                        break
+                    elif cloud_response[-4:] == "3222": #エンコード不必要
+                        response_list.append(cloud_response)
+                        need_encode = False
+                        status = "DONE"
+                        if if_log:
+                            print(f"レスポンス{cloud_response}を獲得/end")
+                        break
+                else:
+                    while not len(response_list) > int(cloud_response[-4:-1]): #リストの数が足りない
+                        response_list.append("")
+                    response_list[int(cloud_response[-4:-1])-1] = cloud_response
+                    if if_log:
+                        print(f"レスポンス{cloud_response}を獲得")
+    if timeout > time.time():
+        raise "TIMEOUT"
+    #一つの文字列に戻す
+    if if_log:
+        print(f"デコード中...")
+    response_zip = ""
+    for i in response_list:
+        i = str(i)
+        response_zip = response_zip + i.split(".")[0]
+    #デコード
+    if need_encode:
+        response = [""]
+        response_zip = [response_zip[i:i+2] for i in range(0, len(response_zip), 2)]
+        for i in response_zip:
+            if i == "89":
+                response.append("")
+            else:
+                response[-1] = response[-1] + encode_list[int(i)]
+        if if_log:
+            print(f"完了!:{response}")
+        return response
+    else:
+        if if_log:
+            print(f"完了!:{response_zip}")
+        return response_zip
+
+_add_method(CloudConnection,scratchattach_requests)
+del _add_method
+
 class ResponseError(requests.HTTPError):
     """
     サーバーからの返答で失敗した時に送出されます。
     """
-    pass
-
 class NoSessionError(Exception):
     """
     セッションが必要な関数で、セッションが登録されていないときに送出されます。
     """
-    pass
 
 class InvalidUsername(Exception):
     """
     ユーザー名が無効である
     """
+
+class encodeerror(ValueError):
+    pass
+
+class request_timeout(requests.HTTPError):
     pass
