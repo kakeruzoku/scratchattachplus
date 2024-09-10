@@ -2,7 +2,7 @@
 import datetime
 from typing import Literal
 from scratchattach import *
-import scratchattach as _s3
+import re
 import requests
 from enum import Enum
 
@@ -31,8 +31,6 @@ def user_report(session:Session,username:str,types:User_report_type):
     3:working on
     """
     t = ["username","icon","about_me","working_on"]
-    if types > 4:
-        raise ValueError
     res = requests.post(
         f"https://scratch.mit.edu/site-api/users/all/{username}/report/?selected_field={t[types.value]}",
         headers = session._headers,
@@ -50,8 +48,6 @@ def studio_report(session:Session,studioid:str,types:Studio_report_type):
     2:thumbnail
     """
     t = ["title","description","thumbnail"]
-    if types > 3:
-        raise ValueError
     res = requests.post(
         f"https://scratch.mit.edu/site-api/galleries/all/{studioid}/report/?selected_field={t[types.value]}",
         headers = session._headers,
@@ -354,7 +350,7 @@ def scratchattach_requests(conn:CloudConnection,content:str|list,**options):
         print("encode中...")
     #エンコード開始
     if type(content) == list:
-        content = "<".join(content)
+        content = "&".join(content)
     for i in content:
         try:
             encoded = encoded + str(encode_list.index(i)) #探す
@@ -412,21 +408,19 @@ def scratchattach_requests(conn:CloudConnection,content:str|list,**options):
                         status = "DONE"
                         if if_log:
                             print(f"レスポンス{cloud_response}を獲得/end")
-                        break
                     elif cloud_response[-4:] == "3222": #エンコード不必要
                         response_list.append(cloud_response)
                         need_encode = False
                         status = "DONE"
                         if if_log:
                             print(f"レスポンス{cloud_response}を獲得/end")
-                        break
-                else:
-                    while not len(response_list) > int(cloud_response[-4:-1]): #リストの数が足りない
-                        response_list.append("")
-                    response_list[int(cloud_response[-4:-1])-1] = cloud_response
-                    if if_log:
-                        print(f"レスポンス{cloud_response}を獲得")
-    if timeout > time.time():
+                    else:
+                        while not len(response_list) > int(cloud_response[-4:-1]): #リストの数が足りない
+                            response_list.append("")
+                        response_list[int(cloud_response[-4:-1])-1] = cloud_response
+                        if if_log:
+                            print(f"レスポンス{cloud_response}を獲得")
+    if timeout < time.time():
         raise "TIMEOUT"
     #一つの文字列に戻す
     if if_log:
