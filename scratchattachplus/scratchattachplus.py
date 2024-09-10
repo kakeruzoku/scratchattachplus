@@ -353,6 +353,8 @@ def scratchattach_requests(conn:CloudConnection,content:str|list,**options):
     if if_log:
         print("encode中...")
     #エンコード開始
+    if type(content) == list:
+        content = "<".join(content)
     for i in content:
         try:
             encoded = encoded + str(encode_list.index(i)) #探す
