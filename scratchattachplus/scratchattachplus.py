@@ -1,5 +1,6 @@
 #import
 import datetime
+import sys
 from typing import Literal
 from scratchattach import *
 import re
@@ -109,8 +110,8 @@ def _user_report(self:User,type:User_report_type):
     return user_report(self._session,self.username,type)
 _user_report.__name__ = "report"
 
-def _comments_object(self,limit=None,offset=0):
-    get_comments(self,limit,offset)
+def _comments_object(self,limit=40,offset=0):
+    return get_comments(self,limit,offset)
 _comments_object.__name__ = "comments_object"
 
 _add_method(Project,_get_comment_object)
@@ -208,16 +209,16 @@ class comment:
             self.datetime = datetime.datetime.fromisoformat(dicts["datetime_created"])
             if self.author is None:
                 if self.location._session is None:
-                    self.author = User(username=self._json["author"]["username"])
+                    self.author = User(username=dicts["author"]["username"])
                 else:
-                    self.author = User(username=self._json["author"]["username"], _session=self)
+                    self.author = User(username=dicts["author"]["username"], _session=self)
                 self.author._update_from_dict(
                     dict(history={"joined":None},profile={
-                        "bio":None,"status":None,"country":None,"images":{"90x90":self._json["author"]["image"][:-9] + "90x90.png"}
-                        },**self._json["author"]))
+                        "bio":None,"status":None,"country":None,"images":{"90x90":dicts["author"]["image"][:-9] + "90x90.png"}
+                        },**dicts["author"]))
             self.reply_count = dicts["reply_count"]
-        except:
-            raise ValueError
+        except BaseException as e:
+            raise ValueError(e)
 
     def update(self) -> None | Literal['429']:
         self._json = self.location.get_comment(self.id)
@@ -323,7 +324,7 @@ class comment:
             raise TypeError
         self.location.delete_comment(comment_id=self.id)
 
-def get_comments(objects:Project|Studio|User, limit:int|None=None, offset:int=0):
+def get_comments(objects:Project|Studio|User, limit:int=40, offset:int=0):
     if type(objects) == User:
         dicts = objects.comments(page=offset+1, limit=limit)
     else:
@@ -447,7 +448,39 @@ def scratchattach_requests(conn:CloudConnection,content:str|list,**options):
         return response_zip
 
 _add_method(CloudConnection,scratchattach_requests)
-del _add_method
+
+
+def user_ok(username:str) -> bool:
+    r = requests.get(f"https://api.scratch.mit.edu/accounts/checkusername/{username}")
+    if r.json()["msg"] == "valid username":
+        return True
+    else:
+        return False
+
+def create_project(session:Session):
+    data = {'targets': [{'isStage': True, 'name': 'Stage', 'variables': {'`jEk@4|i[#Fk?(8x)AV.-my variable': ['my variable', 0]}, 'lists': {}, 'broadcasts': {}, 'blocks': {}, 'comments': {}, 'currentCostume': 0, 'costumes': [{'name': 'backdrop1', 'dataFormat': 'svg', 'assetId': 'cd21514d0531fdffb22204e0ec5ed84a', 'md5ext': 'cd21514d0531fdffb22204e0ec5ed84a.svg', 'rotationCenterX': 240, 'rotationCenterY': 180}], 'sounds': [{'name': 'pop', 'assetId': '83a9787d4cb6f3b7632b4ddfebf74367', 'dataFormat': 'wav', 'format': '', 'rate': 44100, 'sampleCount': 1032, 'md5ext': '83a9787d4cb6f3b7632b4ddfebf74367.wav'}], 'volume': 100, 'layerOrder': 0, 'tempo': 60, 'videoTransparency': 50, 'videoState': 'on', 'textToSpeechLanguage': None}, {'isStage': False, 'name': 'Sprite1', 'variables': {}, 'lists': {}, 'broadcasts': {}, 'blocks': {}, 'comments': {}, 'currentCostume': 0, 'costumes': [{'name': 'costume1', 'bitmapResolution': 1, 'dataFormat': 'svg', 'assetId': 'bcf454acf82e4504149f7ffe07081dbc', 'md5ext': 'bcf454acf82e4504149f7ffe07081dbc.svg', 'rotationCenterX': 48, 'rotationCenterY': 50}, {'name': 'costume2', 'bitmapResolution': 1, 'dataFormat': 'svg', 'assetId': '0fb9be3e8397c983338cb71dc84d0b25', 'md5ext': '0fb9be3e8397c983338cb71dc84d0b25.svg', 'rotationCenterX': 46, 'rotationCenterY': 53}], 'sounds': [{'name': 'Meow', 'assetId': '83c36d806dc92327b9e7049a565c6bff', 'dataFormat': 'wav', 'format': '', 'rate': 44100, 'sampleCount': 37376, 'md5ext': '83c36d806dc92327b9e7049a565c6bff.wav'}], 'volume': 100, 'layerOrder': 1, 'visible': True, 'x': 0, 'y': 0, 'size': 100, 'direction': 90, 'draggable': False, 'rotationStyle': 'all around'}], 'monitors': [], 'extensions': [], 'meta': {'semver': '3.0.0', 'vm': '1.2.22', 'agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36'}}
+    header = {
+        "accept": "*/*",
+        "accept-language": "en-US,en;q=0.9",
+        "content-type": "application/json",
+        "sec-ch-ua": "\"Chromium\";v=\"106\", \"Google Chrome\";v=\"106\", \"Not;A=Brand\";v=\"99\"",
+        "sec-ch-ua-mobile": "?0",
+        "sec-ch-ua-platform": "\"macOS\"",
+        "sec-fetch-dest": "empty",
+        "sec-fetch-mode": "cors",
+        "sec-fetch-site": "same-site",
+        "mode": "cors",
+        "credentials": "include",
+        "referrer": "https://scratch.mit.edu/",
+        "referrerPolicy": "strict-origin-when-cross-origin",
+        }
+    r = requests.post("https://projects.scratch.mit.edu/",json=data,headers=header,cookies=session._cookies)
+    if r.status_code == 200:
+        return r.json()['content-name']
+    else:
+        raise ResponseError
+    
+_add_method(Session,create_project)
 
 class ResponseError(requests.HTTPError):
     """
@@ -468,3 +501,5 @@ class encodeerror(ValueError):
 
 class request_timeout(requests.HTTPError):
     pass
+
+del _add_method

@@ -1,4 +1,4 @@
-**このプロジェクトは趣味で作成しています。[timmccool](https://github.com/TimMcCool)やScratch teamからの承認、協力されていません。**
+**このプロジェクトは趣味(というかほぼ個人用)で作成しています。[timmccool](https://github.com/TimMcCool)やScratch teamからの承認、協力されていません。**
 
 # 環境構築
 - [python](https://www.python.org/downloads)をダウンロード
@@ -113,14 +113,26 @@ scclass.create_student_account(username:str,password:str,country:str="Japan",yea
 create_student_account(invite_id:str,username:str,password:str,**dict) #代用可能
 ```
 
-#クラウド変数
+# クラウド変数
 ```py
 scratchattach_reqests(conn:CloudConnection,content:str|list,**options) #ScrachAttachでリクエストを送信する(サーバーではありません！)
 #または
 conn.scratchattach_reqests(content:str|list,**options)
 ```
 
-#エラー
+# プロジェクト作成
+```py
+import scratchattachplus as sp
+
+sp.create_project(Session)
+または
+Session.create_project()
+
+# 失敗→ResponseError
+# 成功→プロジェクトID
+```
+
+# エラー
 ```py
 class ResponseError(requests.HTTPError):
     """
@@ -136,4 +148,11 @@ class InvalidUsername(Exception):
     """
     ユーザー名が無効である(アカウント登録)
     """
+
+# ScratchAttachリクエストのエラー
+class encodeerror(ValueError):
+    pass
+
+class request_timeout(requests.HTTPError):
+    pass
 ```
