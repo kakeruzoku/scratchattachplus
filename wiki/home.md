@@ -1,4 +1,4 @@
-**このプロジェクトは趣味(というかほぼ個人用)で作成しています。[timmccool](https://github.com/TimMcCool)やScratch teamからの承認、協力されていません。**
+> このプロジェクトは趣味(というかほぼ**個人用**)で作成しています。[timmccool](https://github.com/TimMcCool)やScratch teamからの承認、協力されていません。
 
 # 環境構築
 - [python](https://www.python.org/downloads)をダウンロード
@@ -118,6 +118,17 @@ create_student_account(invite_id:str,username:str,password:str,**dict) #代用�
 scratchattach_reqests(conn:CloudConnection,content:str|list,**options) #ScrachAttachでリクエストを送信する(サーバーではありません！)
 #または
 conn.scratchattach_reqests(content:str|list,**options)
+#オプション
+logging:bool=False #ログを表示するか
+encode_list:str="""1234567890 aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ*/.,!"§$%_-(´)`?<@#~;:+&|^'""" #エンコードリストを入力 改行とかは適当な文字を置く
+argument_separator:str="&" #送信時の区切り文字
+reqest_id:int|str=random.randint(100000, 999999) #リクエストID
+max_length:int=245 #最大文字数
+requests_ver:str="TO_HOST" #リクエスト変数
+timeout:float|int=10 #タイムアウト時間
+response_var:list=[f"FROM_HOST_{i+1}" for i in range(9)] #レスポンス変数
+new_line_id:int=89 #改行の番号
+
 ```
 
 # プロジェクト作成

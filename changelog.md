@@ -2,6 +2,9 @@
 公開!
 
 # v0.x.x
+## v0.3.0
+- user_okの追加
+- scratchattach_requestsの引数追加
 ## v0.2.0
 - プロジェクトの作成の追加
 ## v0.1.x

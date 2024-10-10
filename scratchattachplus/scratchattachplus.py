@@ -160,13 +160,16 @@ class scratch_class:
         # 制作する方法みつけたらdmください
         if not warn:
             input("WARN:現在正しく動作しません。この警告を回避するには 引数:warnをTrueにしてください。 Enterで続行...:")
-        if requests.get(f"https://api.scratch.mit.edu/accounts/checkusername/{username}")["msg"] != "valid username":
+        if requests.get(f"https://api.scratch.mit.edu/accounts/checkusername/{username}").json()["msg"] != "valid username":
             raise InvalidUsername
         token = get_csrf_token()
+        requests.post(f"https://scratch.mit.edu/signup/{self.token}",headers={
+            'Referer': f'https://scratch.mit.edu/signup/{self.token}',"x-csrftoken":token,"cookie":f"permissions=%7B%7D;scratchcsrftoken={token}"
+        })
         response = requests.post(f"https://scratch.mit.edu/classes/register_new_student/"
                                 f"?username={username}&password={password}&birth_month={month}&birth_year={year}&gender=male&country={country}&is_robot=false&" #female
                                 f"classroom_id={self.id}&classroom_token={self.token}",
-                                headers={'Referer': f'https://scratch.mit.edu/signup/{self.token}',"x-csrftoken":token,"cookie":f"scratchcsrftoken={token}"})
+                                headers={'Referer': f'https://scratch.mit.edu/signup/{self.token}',"x-csrftoken":token,"cookie":f"permissions=%7B%7D;scratchcsrftoken={token}"})
         if response.status_code == 200:
             if response.json()[0]["success"]: #さくせすしない！！！
                 return response.json()["token"]
@@ -211,7 +214,7 @@ class comment:
                 if self.location._session is None:
                     self.author = User(username=dicts["author"]["username"])
                 else:
-                    self.author = User(username=dicts["author"]["username"], _session=self)
+                    self.author = User(username=dicts["author"]["username"], _session=self.location._session)
                 self.author._update_from_dict(
                     dict(history={"joined":None},profile={
                         "bio":None,"status":None,"country":None,"images":{"90x90":dicts["author"]["image"][:-9] + "90x90.png"}
@@ -267,7 +270,7 @@ class comment:
 
         retuen:
         None:reported
-        False:failed
+        ResponseError:failed
         """
         headers = self.location._headers.copy()
         headers["cookie"] = self.location._cookies
@@ -343,15 +346,20 @@ def scratchattach_requests(conn:CloudConnection,content:str|list,**options):
         if_log = bool(options["logging"])
     else:
         if_log = False
-    if "encode_list" in options:
-        encode_list = options["encode_list"]
+    if "encode_list" in options: #  is F8FF
+        encode_list = list(""+options["encode_list"])
     else:
-        encode_list = list("""[[[[[]]]]]1234567890 aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ*/.,!"§$%_-(´)`?<@#~;:+&|^'""")
+        encode_list = list("""1234567890 aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ*/.,!"§$%_-(´)`?<@#~;:+&|^'""")
     if if_log:
         print("encode中...")
     #エンコード開始
+    if "argument_separator" in options:
+        argument_separator = options["argument_separator"]
+    else:
+        argument_separator = "&"
+
     if type(content) == list:
-        content = "&".join(content)
+        content = argument_separator.join(content)
     for i in content:
         try:
             encoded = encoded + str(encode_list.index(i)) #探す
@@ -370,26 +378,33 @@ def scratchattach_requests(conn:CloudConnection,content:str|list,**options):
         max_length = options["max_length"]
     else:
         max_length = 245
+    if "requests_ver" in options:
+        requests_ver = options["requests_ver"]
+    else:
+        requests_ver = "TO_HOST"
     #りくえすと
     if len(encoded) < max_length:
-        conn.set_var("TO_HOST",f"{encoded}.{reqest_id}") #1回でいける
+        conn.set_var(requests_ver,f"{encoded}.{reqest_id}") #1回でいける
         if if_log:
             print(f"リクエスト完了:{encoded}")
     else: #2回以上必要
         while len(encoded) != 0: #残りが0になるまで
             if len(encoded) < max_length: #あと1でいける
-                conn.set_var("TO_HOST",f"{encoded}.{reqest_id}")
+                conn.set_var(requests_ver,f"{encoded}.{reqest_id}")
                 if if_log:
                     print(f"リクエスト完了:{encoded}")
                 encoded = ""
             else: #まだ残りある
-                conn.set_var("TO_HOST",f"-{encoded[:max_length]}.{reqest_id}")
+                conn.set_var(requests_ver,f"-{encoded[:max_length]}.{reqest_id}")
                 if if_log:
                     print(f"リクエスト完了:{encoded[:max_length]}")
                 encoded = encoded[max_length:]
     if if_log:
         print(f"レスポンス読み込み中...")
-    timeout = time.time() + 10
+    if "timeout" in options:
+        timeout = time.time() + options["timeout"]
+    else:
+        timeout = time.time() + 10
     if "response_var" in options:
         response_var = options["response_var"]
     else:
@@ -431,11 +446,15 @@ def scratchattach_requests(conn:CloudConnection,content:str|list,**options):
         i = str(i)
         response_zip = response_zip + i.split(".")[0]
     #デコード
+    if "new_line_id" in options:
+        new_line_id = str(options["new_line_id"])
+    else:
+        new_line_id = "89"
     if need_encode:
         response = [""]
         response_zip = [response_zip[i:i+2] for i in range(0, len(response_zip), 2)]
         for i in response_zip:
-            if i == "89":
+            if i == new_line_id:
                 response.append("")
             else:
                 response[-1] = response[-1] + encode_list[int(i)]
